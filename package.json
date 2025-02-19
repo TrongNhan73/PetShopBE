@@ -1,0 +1,32 @@
+{
+  "name": "petshopbe",
+  "version": "1.0.0",
+  "description": "petshop description",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TrongNhan73/PetShopBE.git"
+  },
+  "keywords": [
+    "nodejs",
+    "expressjs",
+    "jwt",
+    "postgres",
+    "sequelize"
+  ],
+  "author": "TrongNhan73",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/TrongNhan73/PetShopBE/issues"
+  },
+  "homepage": "https://github.com/TrongNhan73/PetShopBE#readme",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  },
+  "type": "module"
+}
