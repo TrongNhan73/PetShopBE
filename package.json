@@ -4,7 +4,7 @@
   "description": "petshop description",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "nodemon src/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -15,7 +15,7 @@
     "nodejs",
     "expressjs",
     "jwt",
-    "postgres",
+    "mySQL",
     "sequelize"
   ],
   "author": "TrongNhan73",
@@ -26,7 +26,10 @@
   "homepage": "https://github.com/TrongNhan73/PetShopBE#readme",
   "dependencies": {
     "dotenv": "^16.4.7",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "mysql2": "^3.12.0",
+    "nodemon": "^3.1.9",
+    "sequelize": "^6.37.5"
   },
   "type": "module"
 }
