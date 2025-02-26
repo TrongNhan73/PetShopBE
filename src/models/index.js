@@ -9,10 +9,11 @@ import Rate from "./Rate.model.js";
 import Role from "./Role.model.js";
 import Type from "./Type.model.js";
 import User from "./User.model.js";
+import Discount from "./Discount.model.js";
 import "./associations.js";
 
 const syncDB = async () => {
     await sequelize.sync({ alter: true });
     console.log('Database synced!');
 };
-export { Bill, Group, Image, Information, Item, Product, Rate, Role, Type, User, syncDB };
+export { Bill, Group, Image, Information, Item, Product, Rate, Role, Type, User, syncDB, Discount };
