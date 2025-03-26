@@ -1,9 +1,9 @@
-import { User } from '../models/index.js'
+import { Role, User } from '../models/index.js'
 import { config } from 'dotenv'
 config();
 
 const findUserByEmail = async (email) => {
-    return await User.findOne({ where: { email } })
+    return await User.findOne({ where: { email }, include: Role })
 }
 
 const findUserByPhone = async (phone) => {
