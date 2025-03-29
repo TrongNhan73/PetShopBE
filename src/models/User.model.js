@@ -21,7 +21,7 @@ const User = sequelize.define('user',
             type: DataTypes.STRING,
         },
         refresh_token: {
-            type: DataTypes.STRING,
+            type: DataTypes.STRING(1000),
         },
         username: {
             type: DataTypes.STRING,
