@@ -33,7 +33,7 @@ const handleLogin = async (req, res) => {
 
                 let accessToken = createjwt(content, process.env.ACCESS_TOKEN_KEY, +process.env.ACCESS_TOKEN_EXPIRESIN);
                 const refreshToken = createjwt(content, process.env.REFRESH_TOKEN_KEY, +process.env.REFRESH_TOKEN_EXPIRESIN);
-                res.cookie('refeshToken', refreshToken, { httpOnly: true, maxAge: +process.env.REFRESH_TOKEN_EXPIRESIN * 1000 });
+                res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: +process.env.REFRESH_TOKEN_EXPIRESIN * 1000 });
                 console.log('>>>>>>>>>');
                 console.log(refreshToken);
                 user.set({ refresh_token: refreshToken });
@@ -85,12 +85,12 @@ const handRegister = async (req, res) => {
 
 const handleGetAccessToken = async (req, res) => {
     const cookie = req.cookies;
-    if (cookie && cookie.refeshToken) {
+    if (cookie && cookie.refreshToken) {
         try {
-            const info = verifyjwt(cookie.refeshToken, process.env.REFRESH_TOKEN_KEY);
+            const info = verifyjwt(cookie.refreshToken, process.env.REFRESH_TOKEN_KEY);
             const user = await userService.findUserByEmail(info.email);
             if (user) {
-                if (user.refresh_token && user.refresh_token === cookie.refeshToken) {
+                if (user.refresh_token && user.refresh_token === cookie.refreshToken) {
 
 
                     let content = {
@@ -107,7 +107,7 @@ const handleGetAccessToken = async (req, res) => {
                     console.log('>>>>RT');
                     console.log(user.refresh_token);
                     console.log('>>>>RT cookie');
-                    console.log(cookie.refeshToken);
+                    console.log(cookie.refreshToken);
                     return res.send(ResponseContent('-4', 'Refresh token is incorrect', null));
 
                 }
@@ -129,8 +129,30 @@ const handleGetAccessToken = async (req, res) => {
 
 }
 
+const handleLogout = async (req, res) => {
+    try {
+        const cookie = req.cookies;
+        if (cookie.refreshToken) {
+            const { email } = verifyjwt(cookie.refreshToken, process.env.REFRESH_TOKEN_KEY);
+            const user = await userService.findUserByEmail(email);
+            if (user.refresh_token === cookie.refreshToken) {
+                user.refresh_token = '';
+                await user.save();
+                res.clearCookie("refreshToken");
+                return res.send(ResponseContent('1', 'Logout successfully', null));
+            } else {
+                throw new Error('Some errr>>>>>>>>>>')
+            }
+        } else {
+            return res.send(ResponseContent('-1', 'Can\'t find refresh token', null));
+        }
+    } catch (e) {
+        console.log(e);
+        return res.send(ResponseContent('-2', 'Some err from server', null));
+
+    }
+}
 
 
-
-export { test, handleLogin, handRegister, handleGetAccessToken };
+export { test, handleLogin, handRegister, handleGetAccessToken, handleLogout };
 
