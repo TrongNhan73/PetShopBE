@@ -19,7 +19,7 @@ Bill.hasMany(Item, { foreignKey: 'bill_id' });
 Item.belongsTo(Bill, { foreignKey: 'bill_id' });
 
 Product.hasMany(Image, { foreignKey: 'product_id' });
-Item.belongsTo(Product, { foreignKey: 'product_id' });
+Image.belongsTo(Product, { foreignKey: 'product_id' });
 
 Rate.belongsTo(Product, { foreignKey: 'product_id' });
 Product.hasOne(Rate, { foreignKey: 'product_id' });

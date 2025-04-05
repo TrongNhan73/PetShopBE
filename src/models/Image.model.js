@@ -1,5 +1,6 @@
 import sequelize from "../database/index.js";
 import { DataTypes } from "sequelize";
+import Product from "./Product.model.js";
 const Image = sequelize.define('image',
     {
         id: {
@@ -13,8 +14,12 @@ const Image = sequelize.define('image',
         type: {
             type: DataTypes.STRING,
         },
-        owner_id: {
-            type: DataTypes.UUID
+        product_id: {
+            type: DataTypes.UUID,
+            references: {
+                model: Product,
+                key: 'id'
+            },
         }
     }
 );

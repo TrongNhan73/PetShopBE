@@ -153,6 +153,80 @@ const handleLogout = async (req, res) => {
     }
 }
 
+// "email profile openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile"
+const handLogInWithGoogle = async (req, res) => {
+    try {
+        console.log(req.body.googleAccessToken);
+        const response = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${req.body.googleAccessToken}`);
+        const userInfo = await response.json();
+        if (userInfo && userInfo.email) {
+            const user = await userService.findUserByEmail(userInfo.email);
+            if (user) {
+                let content = {
+                    email: user.email,
+                    user_name: user.username,
+                    role_id: user.role.id,
+                    address: user.address,
+                    phone: user.phone
+                }
 
-export { test, handleLogin, handRegister, handleGetAccessToken, handleLogout };
+                let accessToken = createjwt(content, process.env.ACCESS_TOKEN_KEY, +process.env.ACCESS_TOKEN_EXPIRESIN);
+                const refreshToken = createjwt(content, process.env.REFRESH_TOKEN_KEY, +process.env.REFRESH_TOKEN_EXPIRESIN);
+                res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: +process.env.REFRESH_TOKEN_EXPIRESIN * 1000 });
+                console.log('>>>>>>>>>');
+                console.log(refreshToken);
+                user.set({ refresh_token: refreshToken });
+                console.log('>>>>>>>>>');
+                console.log(refreshToken);
+                await user.save();
+
+                return res.send(ResponseContent('1', 'Login successfully', { accessToken, refreshToken }));
+
+            } else {
+
+                //create new user
+                const data = {
+                    email: userInfo.email,
+                    phone: '',
+                    username: userInfo.name,
+                    password: '1',
+                }
+                await userService.createUser(data);
+
+
+                //get info user
+                const user = await userService.findUserByEmail(userInfo.email);
+                let content = {
+                    email: user.email,
+                    user_name: user.username,
+                    role_id: user.role.id,
+                    address: user.address,
+                    phone: user.phone
+                }
+
+                let accessToken = createjwt(content, process.env.ACCESS_TOKEN_KEY, +process.env.ACCESS_TOKEN_EXPIRESIN);
+                const refreshToken = createjwt(content, process.env.REFRESH_TOKEN_KEY, +process.env.REFRESH_TOKEN_EXPIRESIN);
+                res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: +process.env.REFRESH_TOKEN_EXPIRESIN * 1000 });
+                console.log('>>>>>>>>>');
+                console.log(refreshToken);
+                user.set({ refresh_token: refreshToken });
+                console.log('>>>>>>>>>');
+                console.log(refreshToken);
+                await user.save();
+
+                return res.send(ResponseContent('1', 'Login successfully', { accessToken, refreshToken }));
+
+            }
+        }
+        else {
+            throw Error('>>>err when call api google');
+        }
+
+    } catch (err) {
+        console.log(err);
+        return res.send(ResponseContent('-1', 'Some err from server', null));
+    }
+}
+
+export { test, handleLogin, handRegister, handleGetAccessToken, handleLogout, handLogInWithGoogle };
 
