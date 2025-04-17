@@ -7,5 +7,7 @@ const createjwt = (content, private_key, expiresIn) => {
 const verifyjwt = (token, private_key) => {
     return jwt.verify(token, private_key);
 }
-
-export { createjwt, verifyjwt }
+const decodejwt = (token) => {
+    return jwt.decode(token);
+}
+export { createjwt, verifyjwt, decodejwt }

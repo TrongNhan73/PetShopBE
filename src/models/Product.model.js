@@ -12,6 +12,9 @@ const Product = sequelize.define('product',
         price: {
             type: DataTypes.INTEGER,
         },
+        view: {
+            type: DataTypes.INTEGER,
+        },
         name: {
             type: DataTypes.STRING,
         },

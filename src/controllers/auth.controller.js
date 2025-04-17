@@ -1,6 +1,7 @@
+import { email_existed, login_failed, not_find_RT, phone_existed, RT_incorrect, RT_invalid, server_err } from "../Err.js"
 import * as userService from "../services/user.service.js"
 import { ResponseContent } from "../utils/FormatResponse.js"
-import { createjwt, verifyjwt } from "../utils/Jwt.js"
+import { createjwt, decodejwt, verifyjwt } from "../utils/Jwt.js"
 import { checkPassword, hashPassword } from "../utils/Password.js"
 import { config } from "dotenv"
 
@@ -19,7 +20,6 @@ const test = (req, res) => {
 const handleLogin = async (req, res) => {
     try {
         const { email, password } = req.body;
-        console.log(req.cookies);
         let user = await userService.findUserByEmail(email);
         if (user) {
             if (checkPassword(password, user.password)) {
@@ -28,7 +28,8 @@ const handleLogin = async (req, res) => {
                     user_name: user.username,
                     role_id: user.role.id,
                     address: user.address,
-                    phone: user.phone
+                    phone: user.phone,
+                    img_url: user.img_url,
                 }
 
                 let accessToken = createjwt(content, process.env.ACCESS_TOKEN_KEY, +process.env.ACCESS_TOKEN_EXPIRESIN);
@@ -44,17 +45,16 @@ const handleLogin = async (req, res) => {
                 return res.send(ResponseContent('1', 'Login successfully', { accessToken, refreshToken }));
 
             } else {
-                return res.send(ResponseContent('-1', 'Email or password is incorrect', null));
+                return res.send(login_failed);
             }
         } else {
-            return res.send(ResponseContent('-1', 'Email or password is incorrect', null));
-
+            return res.send(login_failed);
         }
 
     } catch (e) {
         console.log('>>>>>Err when login:');
         console.log(e);
-        return res.send(ResponseContent('0', 'Error from server', null))
+        return res.send(server_err)
     }
 }
 
@@ -63,22 +63,22 @@ const handRegister = async (req, res) => {
         const { email, username, phone, password } = req.body;
 
         let email_exist = await userService.findUserByEmail(email);
-        if (email_exist) return res.send(ResponseContent('-1', 'The email is already exist', null));
+        if (email_exist) return res.send(email_existed);
 
         let phone_exist = await userService.findUserByPhone(phone);
-        if (phone_exist) return res.send(ResponseContent('-2', 'The phone number is already exist', null));
+        if (phone_exist) return res.send(phone_existed);
 
         let hashpassword = hashPassword(password);
         await userService.createUser(
             {
-                email, phone, username,
+                email, phone, username, img_url: '',
                 password: hashpassword
             }
         );
         return res.send(ResponseContent('1', 'Successfully created a new user', null));
     } catch (e) {
         console.log(e);
-        res.send(ResponseContent('0', 'Error from server', null))
+        res.send(server_err)
     }
 }
 
@@ -98,7 +98,8 @@ const handleGetAccessToken = async (req, res) => {
                         user_name: user.username,
                         role_id: user.role.id,
                         address: user.address,
-                        phone: user.phone
+                        phone: user.phone,
+                        img_url: user.img_url
                     }
                     let accessToken = createjwt(content, process.env.ACCESS_TOKEN_KEY, +process.env.ACCESS_TOKEN_EXPIRESIN);
                     return res.send(ResponseContent('1', 'Successfully', { accessToken }));
@@ -108,21 +109,20 @@ const handleGetAccessToken = async (req, res) => {
                     console.log(user.refresh_token);
                     console.log('>>>>RT cookie');
                     console.log(cookie.refreshToken);
-                    return res.send(ResponseContent('-4', 'Refresh token is incorrect', null));
+                    return res.send(RT_incorrect);
 
                 }
             } else {
-                return res.send(ResponseContent('-3', 'Refresh token is incorrect with user', null));
+                return res.send(RT_incorrect);
 
             }
-            console.log(info);
         } catch (e) {
             console.log(e);
-            return res.send(ResponseContent('-2', 'Refresh token is invalid or expired', null));
+            return res.send(RT_invalid);
 
         }
     } else {
-        return res.send(ResponseContent('-1', 'Can\'t find refresh token', null));
+        return res.send(not_find_RT);
 
     }
 
@@ -133,22 +133,23 @@ const handleLogout = async (req, res) => {
     try {
         const cookie = req.cookies;
         if (cookie.refreshToken) {
-            const { email } = verifyjwt(cookie.refreshToken, process.env.REFRESH_TOKEN_KEY);
+            const { email } = decodejwt(cookie.refreshToken);
             const user = await userService.findUserByEmail(email);
-            if (user.refresh_token === cookie.refreshToken) {
+            if (user && user.refresh_token === cookie.refreshToken) {
                 user.refresh_token = '';
                 await user.save();
                 res.clearCookie("refreshToken");
                 return res.send(ResponseContent('1', 'Logout successfully', null));
             } else {
-                throw new Error('Some errr>>>>>>>>>>')
+                return res.send(RT_incorrect);
+
             }
         } else {
-            return res.send(ResponseContent('-1', 'Can\'t find refresh token', null));
+            return res.send(not_find_RT);
         }
     } catch (e) {
         console.log(e);
-        return res.send(ResponseContent('-2', 'Some err from server', null));
+        return res.send(server_err);
 
     }
 }
@@ -156,9 +157,9 @@ const handleLogout = async (req, res) => {
 // "email profile openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile"
 const handLogInWithGoogle = async (req, res) => {
     try {
-        console.log(req.body.googleAccessToken);
         const response = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${req.body.googleAccessToken}`);
         const userInfo = await response.json();
+
         if (userInfo && userInfo.email) {
             const user = await userService.findUserByEmail(userInfo.email);
             if (user) {
@@ -167,17 +168,17 @@ const handLogInWithGoogle = async (req, res) => {
                     user_name: user.username,
                     role_id: user.role.id,
                     address: user.address,
-                    phone: user.phone
+                    phone: user.phone,
+                    img_url: user.img_url
                 }
 
-                let accessToken = createjwt(content, process.env.ACCESS_TOKEN_KEY, +process.env.ACCESS_TOKEN_EXPIRESIN);
+                const accessToken = createjwt(content, process.env.ACCESS_TOKEN_KEY, +process.env.ACCESS_TOKEN_EXPIRESIN);
                 const refreshToken = createjwt(content, process.env.REFRESH_TOKEN_KEY, +process.env.REFRESH_TOKEN_EXPIRESIN);
+
                 res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: +process.env.REFRESH_TOKEN_EXPIRESIN * 1000 });
-                console.log('>>>>>>>>>');
-                console.log(refreshToken);
+
+
                 user.set({ refresh_token: refreshToken });
-                console.log('>>>>>>>>>');
-                console.log(refreshToken);
                 await user.save();
 
                 return res.send(ResponseContent('1', 'Login successfully', { accessToken, refreshToken }));
@@ -190,6 +191,7 @@ const handLogInWithGoogle = async (req, res) => {
                     phone: '',
                     username: userInfo.name,
                     password: '1',
+                    img_url: userInfo.picture
                 }
                 await userService.createUser(data);
 
@@ -201,17 +203,17 @@ const handLogInWithGoogle = async (req, res) => {
                     user_name: user.username,
                     role_id: user.role.id,
                     address: user.address,
-                    phone: user.phone
+                    phone: user.phone,
+                    img_url: user.img_url
                 }
 
                 let accessToken = createjwt(content, process.env.ACCESS_TOKEN_KEY, +process.env.ACCESS_TOKEN_EXPIRESIN);
                 const refreshToken = createjwt(content, process.env.REFRESH_TOKEN_KEY, +process.env.REFRESH_TOKEN_EXPIRESIN);
+
                 res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: +process.env.REFRESH_TOKEN_EXPIRESIN * 1000 });
-                console.log('>>>>>>>>>');
-                console.log(refreshToken);
+
+
                 user.set({ refresh_token: refreshToken });
-                console.log('>>>>>>>>>');
-                console.log(refreshToken);
                 await user.save();
 
                 return res.send(ResponseContent('1', 'Login successfully', { accessToken, refreshToken }));
@@ -224,7 +226,7 @@ const handLogInWithGoogle = async (req, res) => {
 
     } catch (err) {
         console.log(err);
-        return res.send(ResponseContent('-1', 'Some err from server', null));
+        return res.send(server_err);
     }
 }
 

@@ -26,6 +26,9 @@ const User = sequelize.define('user',
         username: {
             type: DataTypes.STRING,
         },
+        img_url: {
+            type: DataTypes.STRING,
+        },
         role_id: {
             type: DataTypes.UUID,
             references: {

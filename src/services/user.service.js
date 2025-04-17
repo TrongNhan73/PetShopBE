@@ -10,8 +10,8 @@ const findUserByPhone = async (phone) => {
     return await User.findOne({ where: { phone } })
 }
 
-const createUser = async ({ email, phone, username, password }) => {
-    return await User.create({ email, phone, username, password, address: '', refresh_token: '', role_id: process.env.ROLE_ID_USER });
+const createUser = async ({ email, phone, username, password, img_url }) => {
+    return await User.create({ email, phone, username, password, address: '', refresh_token: '', role_id: process.env.ROLE_ID_USER, img_url });
 }
 
 export {
